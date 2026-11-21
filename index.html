@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050608">
+  <title>TuneMatch — Find music that feels like you</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <canvas id="lumora-bg" aria-hidden="true"></canvas>
+  <div class="lumora-vignette" aria-hidden="true"></div>
+  <div class="lumora-glow lumora-glow-one" aria-hidden="true"></div>
+  <div class="lumora-glow lumora-glow-two" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#discover">
+      <span class="brand-mark"><i></i><i></i><i></i></span>
+      <span>TuneMatch</span>
+    </a>
+    <nav class="nav-links" id="nav-links">
+      <a href="#discover">Discover</a>
+      <a href="#workspace">Player</a>
+      <a href="#mix-shelf">Discovery Mix</a>
+      <a href="#how">How it works</a>
+    </nav>
+    <a class="top-cta" href="#workspace">Search tracks <span>↗</span></a>
+    <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">☰</button>
+  </header>
+
+  <main>
+    <section class="hero reveal" id="discover">
+      <div class="eyebrow"><span class="pulse"></span> AUDIO-FEATURE MUSIC DISCOVERY</div>
+      <h1>Find music that <span>feels like you.</span></h1>
+      <p class="hero-description">
+        Search any track to generate a similarity-matched mix and play full songs directly inside your glass player.
+      </p>
+    </section>
+
+    <section class="workspace reveal" id="workspace">
+      <form id="recommend-form" class="workspace-search">
+        <div class="ws-field ws-song-field">
+          <span class="ws-icon">♫</span>
+          <input id="song" name="song" placeholder="Search a song title (e.g. Tum Hi Ho, Ilahi, Shape of You)" autocomplete="off" required>
+          <div id="autocomplete-list" class="autocomplete-list hidden" role="listbox"></div>
+        </div>
+        <div class="ws-field ws-artist-field">
+          <span class="ws-icon">♬</span>
+          <input id="artist" name="artist" placeholder="Artist (optional, e.g. Arijit Singh)" autocomplete="off">
+        </div>
+        <button type="submit" class="ws-submit-btn">
+          <span>Find Mix</span>
+          <b>↗</b>
+        </button>
+      </form>
+      <div id="status" class="status" aria-live="polite"></div>
+
+      <!-- Main 3-Column Glassmorphism Player -->
+      <div class="glass-player" id="player-stage" aria-label="TuneMatch Interactive Glass Player">
+        <!-- Left Panel: Artwork / Embedded Full-Song Video, Meta, Progress -->
+        <div class="gp-left">
+          <div class="gp-brand-row">
+            <span class="gp-logo-dot">♫</span>
+            <span class="gp-brand-name">Now Playing</span>
+            <span class="gp-badge" id="player-genre-badge">pop-film</span>
+          </div>
+
+          <div class="gp-cover-wrap">
+            <div class="gp-cover" id="player-cover">
+              <!-- YouTube Full-Track Player Mount (visible when toggled or active) -->
+              <div id="yt-player-wrap" class="gp-yt-frame hidden">
+                <div id="yt-player-mount"></div>
+              </div>
+              <img id="player-artwork" class="gp-artwork hidden" alt="Album cover art" crossorigin="anonymous">
+              <div class="gp-cover-mesh" id="player-cover-fallback"></div>
+              <div class="gp-cover-ring" id="player-cover-ring"></div>
+              <div class="gp-cover-center" id="player-cover-center">
+                <span class="gp-cover-note">♫</span>
+              </div>
+              <button type="button" class="gp-cover-corner" id="btn-toggle-video" title="Toggle YouTube video / Album art">◈</button>
+            </div>
+          </div>
+
+          <div class="gp-track-info">
+            <h3 id="player-title">Tum Hi Ho</h3>
+            <p id="player-artist">Arijit Singh</p>
+            <small id="player-album">Aashiqui 2 · 100.0% match</small>
+          </div>
+
+          <div class="gp-progress-block">
+            <input type="range" id="player-seek" class="gp-slider gp-seek-slider" min="0" max="262" value="0" aria-label="Track progress">
+            <div class="gp-time-row">
+              <span id="player-current-time">0:00</span>
+              <span id="player-total-time">4:22</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Panel: Glowing Cyan Waveform Orb & Transport -->
+        <div class="gp-center">
+          <button class="gp-orb-info-btn" id="orb-mode-btn" title="Toggle visualizer style" aria-label="Toggle visualizer style">◎</button>
+          <div class="gp-orb" id="player-orb">
+            <canvas id="waveform-canvas" width="340" height="340"></canvas>
+          </div>
+          <div class="gp-transport">
+            <button class="gp-ctrl-btn" id="btn-prev" aria-label="Previous track" title="Previous track">⏮</button>
+            <button class="gp-skip-btn" id="btn-back-10" aria-label="Back 10 seconds" title="Back 10s">↺ 10s</button>
+            <button class="gp-play-btn" id="btn-play" aria-label="Play or pause" title="Play / Pause">
+              <span id="play-icon">▶</span>
+            </button>
+            <button class="gp-skip-btn" id="btn-fwd-10" aria-label="Forward 10 seconds" title="Forward 10s">10s ↻</button>
+            <button class="gp-ctrl-btn" id="btn-next" aria-label="Next track" title="Next track">⏭</button>
+          </div>
+          <div class="gp-playback-status" id="playback-status">Click ▶ to play full song</div>
+        </div>
+
+        <!-- Right Panel: Frosted Lavender-Blue Control & Audio DNA Card -->
+        <div class="gp-right">
+          <div class="gp-right-header">
+            <div>
+              <strong id="right-panel-title">Audio DNA</strong>
+              <small id="right-panel-subtitle">Full Track Playback</small>
+            </div>
+            <button class="gp-icon-btn" id="btn-toggle-panel" aria-label="Switch between Audio DNA and Queue" title="Switch Audio DNA / Queue">≡</button>
+          </div>
+
+          <div class="gp-right-body" id="panel-audio">
+            <a class="gp-yt-btn" id="btn-youtube-link" href="https://www.youtube.com/results?search_query=Tum+Hi+Ho+Arijit+Singh" target="_blank" rel="noopener noreferrer">
+              <span class="gp-mini-play">▶</span>
+              <div>
+                <strong>Open on YouTube</strong>
+                <small id="yt-sub">Watch or listen in new tab</small>
+              </div>
+              <span class="gp-yt-arrow">↗</span>
+            </a>
+
+            <div class="gp-mini-wave-row">
+              <button class="gp-mini-arrow" id="btn-nudge-back" aria-label="Rewind 10s">◀</button>
+              <div class="gp-mini-bars" id="mini-bars">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <button class="gp-mini-arrow" id="btn-nudge-fwd" aria-label="Forward 10s">▶</button>
+              <button class="gp-icon-btn gp-shuffle-btn" id="btn-shuffle" aria-label="Shuffle queue" title="Shuffle">⇄</button>
+            </div>
+
+            <div class="gp-eq-block">
+              <div class="gp-eq-head">
+                <label for="vol-slider">Volume</label>
+                <span id="vol-value">85%</span>
+              </div>
+              <input type="range" id="vol-slider" class="gp-slider gp-eq-slider" min="0" max="100" value="85" aria-label="Player volume">
+              <div class="gp-feature-pills" id="feature-pills">
+                <span>Energy <b id="stat-energy">0.55</b></span>
+                <span>Dance <b id="stat-dance">0.51</b></span>
+                <span>BPM <b id="stat-tempo">94</b></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="gp-right-body hidden" id="panel-queue">
+            <div class="gp-queue-list" id="gp-queue-list"></div>
+          </div>
+
+          <div class="gp-right-footer">
+            <button class="gp-icon-btn" id="btn-loop" aria-label="Loop track" title="Loop">↻</button>
+            <button class="gp-icon-btn gp-vol-btn" id="btn-mute" aria-label="Mute or unmute" title="Mute / Unmute">🔊</button>
+            <button class="gp-icon-btn" id="btn-open-queue" aria-label="Open queue" title="Queue">☰</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spotify-Style Discovery Mix Tracklist -->
+      <div class="mix-shelf" id="mix-shelf">
+        <div class="mix-header">
+          <div>
+            <div class="eyebrow">DISCOVERY QUEUE</div>
+            <h2>Up Next in Your Mix</h2>
+          </div>
+          <span class="result-count" id="result-count">3 starter tracks</span>
+        </div>
+
+        <div id="seed-card" class="seed-card"></div>
+
+        <div class="tracklist-head">
+          <span>#</span>
+          <span>TRACK</span>
+          <span class="col-genre">GENRE</span>
+          <span class="col-match">MATCH</span>
+          <span class="col-action">PLAY</span>
+        </div>
+        <div id="recommendation-grid" class="tracklist-body"></div>
+      </div>
+    </section>
+
+    <section class="how-section reveal" id="how">
+      <div class="section-heading">
+        <div class="eyebrow">BEHIND THE MATCH</div>
+        <h2>More than a genre.</h2>
+        <p>TuneMatch compares the musical characteristics that help describe a track's sound.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-icon">◉</span>
+          <h3>Audio features</h3>
+          <p>Looks at attributes such as energy, danceability, valence, acousticness, and tempo.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon">⌁</span>
+          <h3>Similarity search</h3>
+          <p>Uses standardized Euclidean distance filtering and cosine similarity ranking within genre.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon">✳</span>
+          <h3>Full-song playback</h3>
+          <p>Streams full tracks via embedded YouTube playback inside your glass player—no API key required.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer id="about">
+    <a class="brand" href="#discover"><span class="brand-mark"><i></i><i></i><i></i></span> <span>TuneMatch</span></a>
+    <span>Find your next repeat.</span>
+    <small>Built with music, data &amp; curiosity.</small>
+  </footer>
+
+  <audio id="audio-element" crossorigin="anonymous" preload="none"></audio>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
